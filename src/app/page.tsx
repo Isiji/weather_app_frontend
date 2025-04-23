@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 // ✅ Define the type for weather response
 type WeatherData = {
   weather: string;
+  icon: string;
   city: string;
   units: string;
 };
@@ -68,6 +69,12 @@ export default function Home() {
         {weather && (
           <div className="mt-6 p-4 bg-white rounded-lg shadow">
             <p className="text-lg font-semibold">Weather: {weather.weather}</p>
+
+            <img
+              src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+              alt={weather.weather}
+              className="mx-auto mb-2"
+            />
             <p className="text-gray-700">City: {weather.city}</p>
             <p className="text-gray-700">Units: {weather.units}</p>
           </div>
