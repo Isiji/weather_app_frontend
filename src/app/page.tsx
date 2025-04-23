@@ -4,18 +4,28 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-// ✅ Define the type for weather response
+// Define types for weather data
 type WeatherData = {
   weather: string;
   icon: string;
   city: string;
   units: string;
+  temperature: number;
+  date: string;
+  windSpeed: number;
+  humidity: number;
+  forecast: {
+    day: string;
+    temp: number;
+    icon: string;
+  }[];
 };
 
 export default function Home() {
   const [city, setCity] = useState("");
-  const [weather, setWeather] = useState<WeatherData | null>(null); // ✅ Type added
+  const [weather, setWeather] = useState<WeatherData | null>(null);
 
+  // Handle city search
   const handleSearch = async () => {
     if (!city.trim()) return;
 
@@ -51,9 +61,8 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-sky-100 p-6 flex flex-col items-center">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-center mb-6">Weather App</h1>
-
-        <div className="flex items-center gap-2">
+        {/* Top bar with search and temperature unit toggle */}
+        <div className="flex justify-between items-center mb-4">
           <Input
             placeholder="Enter city name"
             value={city}
@@ -63,20 +72,64 @@ export default function Home() {
             className="flex-1"
           />
           <Button onClick={handleSearch}>Search</Button>
+          {/* Unit toggle: Celsius/Fahrenheit */}
+          <Button onClick={() => console.log("Switch unit")} className="ml-2">
+            °C/°F
+          </Button>
         </div>
 
-        {/* ✅ Display weather data if available */}
+        {/* Weather information section */}
+        {weather && (
+          <div className="flex justify-between items-start gap-4">
+            {/* Left section: Icon, Temperature, Description */}
+            <div className="flex flex-col items-start">
+              <img
+                src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                alt={weather.weather}
+                className="w-16 h-16 mb-4"
+              />
+              <p className="text-xl font-semibold">{weather.temperature}°</p>
+              <p className="text-lg">{weather.weather}</p>
+            </div>
+
+            {/* Right section: Date and Location */}
+            <div className="flex flex-col items-end">
+              <p className="text-md font-semibold">{weather.city}</p>
+              <p className="text-sm">{weather.date}</p>
+            </div>
+          </div>
+        )}
+
+        {/* 3-Day Forecast Section */}
+        {weather && (
+          <div className="mt-6 grid grid-cols-3 gap-4">
+            {weather.forecast.map((day, index) => (
+              <div key={index} className="text-center">
+                <img
+                  src={`https://openweathermap.org/img/wn/${day.icon}@2x.png`}
+                  alt={day.day}
+                  className="w-12 h-12 mx-auto mb-2"
+                />
+                <p>{day.day}</p>
+                <p>{day.temp}°</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Wind and Humidity Information */}
         {weather && (
           <div className="mt-6 p-4 bg-white rounded-lg shadow">
-            <p className="text-lg font-semibold">Weather: {weather.weather}</p>
-
-            <img
-              src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
-              alt={weather.weather}
-              className="mx-auto mb-2"
-            />
-            <p className="text-gray-700">City: {weather.city}</p>
-            <p className="text-gray-700">Units: {weather.units}</p>
+            <div className="flex justify-between">
+              <div className="flex items-center">
+                <span className="mr-2">💨</span>
+                <p>Wind Speed: {weather.windSpeed} m/s</p>
+              </div>
+              <div className="flex items-center">
+                <span className="mr-2">💧</span>
+                <p>Humidity: {weather.humidity}%</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
