@@ -21,6 +21,31 @@ export default function Home() {
 
   useEffect(() => {
     setLocalDate(new Date().toLocaleDateString());
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          const unit = isFahrenheit ? "imperial" : "metric";
+
+          try {
+            setLoading(true);
+            const res = await fetch(
+              `http://127.0.0.1:8000/api/weather?lat=${latitude}&lon=${longitude}&units=${unit}`
+            );
+            const data = await res.json();
+            setWeatherData(data);
+          } catch (err) {
+            console.error("Auto-detect weather failed:", err);
+          } finally {
+            setLoading(false);
+          }
+        },
+        (error) => {
+          console.warn("Geolocation error:", error.message);
+        }
+      );
+    }
   }, []);
 
   const handleSearch = async () => {
@@ -50,7 +75,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-200 via-sky-100 to-blue-100 p-6 grid grid-cols-3 gap-4 font-sans transition-all">
-
       {/* Left Column */}
       <section className="col-span-1 flex flex-col justify-between bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
         <div className="text-center animate-fade-in">
