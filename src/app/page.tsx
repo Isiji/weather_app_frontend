@@ -1,5 +1,6 @@
 "use client";
 
+import "./globals.css";
 import { useState, useEffect } from "react";
 import WeatherToday from "@/components/WeatherToday";
 import SearchBar from "@/components/SearchBar";
@@ -108,7 +109,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-6 font-sans transition-all">
+    <main className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-6 font-sans transition-all main-container">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-blue-800 mb-6 text-center">Weather Dashboard</h1>
 
