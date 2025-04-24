@@ -18,6 +18,7 @@ export default function Home() {
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [localDate, setLocalDate] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setLocalDate(new Date().toLocaleDateString());
@@ -30,36 +31,60 @@ export default function Home() {
 
           try {
             setLoading(true);
+            setError(null);
             const res = await fetch(
               `http://127.0.0.1:8000/api/weather?lat=${latitude}&lon=${longitude}&units=${unit}`
             );
+            
+            if (!res.ok) {
+              throw new Error(`API error: ${res.status}`);
+            }
+            
             const data = await res.json();
             setWeatherData(data);
           } catch (err) {
             console.error("Auto-detect weather failed:", err);
+            setError("Failed to detect location weather. Please try searching for a city.");
           } finally {
             setLoading(false);
           }
         },
         (error) => {
           console.warn("Geolocation error:", error.message);
+          setError("Location access denied. Please search for a city instead.");
         }
       );
     }
   }, [isFahrenheit]);
 
   const handleSearch = async () => {
-    if (!city) return;
+    if (!city.trim()) {
+      setError("Please enter a city name");
+      return;
+    }
 
     setLoading(true);
+    setError(null);
+    
     try {
+      // First, verify that API key is available
+      if (!process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY) {
+        throw new Error("API key not configured");
+      }
+      
+      // Make the geo API call
       const geoRes = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
+        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
       );
+      
+      if (!geoRes.ok) {
+        throw new Error(`Geo API error: ${geoRes.status}`);
+      }
+      
       const geoData = await geoRes.json();
       
       if (!geoData || geoData.length === 0) {
-        console.error("City not found");
+        setError(`City "${city}" not found. Please check the spelling and try again.`);
         setLoading(false);
         return;
       }
@@ -67,13 +92,27 @@ export default function Home() {
       const { lat, lon } = geoData[0];
       const unit = isFahrenheit ? "imperial" : "metric";
 
+      // Make the weather API call
       const res = await fetch(
         `http://127.0.0.1:8000/api/weather?lat=${lat}&lon=${lon}&units=${unit}&city=${city}`
       );
+      
+      if (!res.ok) {
+        throw new Error(`Weather API error: ${res.status}`);
+      }
+      
       const data = await res.json();
       setWeatherData(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to fetch weather:", err);
+      
+      if (err.message === "API key not configured") {
+        setError("API key not configured. Please add your OpenWeather API key to the environment variables.");
+      } else if (err.message.includes("Geo API error")) {
+        setError("Error connecting to weather service. Please try again later.");
+      } else {
+        setError(`Failed to fetch weather data: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -87,12 +126,9 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-6 font-sans transition-all">
-      {/* Container with better max-width and centering */}
       <div className="max-w-7xl mx-auto">
-        {/* App title */}
         <h1 className="text-3xl font-bold text-blue-800 mb-6 text-center">Weather Dashboard</h1>
         
-        {/* Main layout container with refined gap */}
         <div className="flex flex-row gap-6 overflow-x-auto pb-2">
           {/* Left Column - Today's Weather */}
           <section className="w-1/3 min-w-72 bg-white/95 border border-blue-200 rounded-2xl shadow-md p-8 flex flex-col items-center text-center hover:shadow-lg transition duration-300">
@@ -117,31 +153,40 @@ export default function Home() {
           {/* Right Column - Controls and Details */}
           <section className="w-2/3 flex flex-col gap-6">
             {/* Search + Toggle Row */}
-            <div className="flex flex-row justify-between items-center gap-6 bg-white/90 border border-blue-200 rounded-xl shadow p-5">
-              {/* Search */}
-              <div className="flex w-3/4 gap-3">
-                <Input
-                  placeholder="Enter city name..."
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="flex-1 text-base"
-                />
-                <Button 
-                  onClick={handleSearch}
-                  disabled={loading}
-                  className="px-6"
-                >
-                  {loading ? "Searching..." : "Search"}
-                </Button>
-              </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-row justify-between items-center gap-6 bg-white/90 border border-blue-200 rounded-xl shadow p-5">
+                {/* Search */}
+                <div className="flex w-3/4 gap-3">
+                  <Input
+                    placeholder="Enter city name..."
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    className="flex-1 text-base"
+                  />
+                  <Button 
+                    onClick={handleSearch}
+                    disabled={loading}
+                    className="px-6"
+                  >
+                    {loading ? "Searching..." : "Search"}
+                  </Button>
+                </div>
 
-              {/* Toggle */}
-              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 py-2 px-4 rounded-xl shadow-sm hover:shadow transition">
-                <span className="text-sm font-semibold text-gray-700">°C</span>
-                <Switch checked={isFahrenheit} onCheckedChange={setIsFahrenheit} />
-                <span className="text-sm font-semibold text-gray-700">°F</span>
+                {/* Toggle */}
+                <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 py-2 px-4 rounded-xl shadow-sm hover:shadow transition">
+                  <span className="text-sm font-semibold text-gray-700">°C</span>
+                  <Switch checked={isFahrenheit} onCheckedChange={setIsFahrenheit} />
+                  <span className="text-sm font-semibold text-gray-700">°F</span>
+                </div>
               </div>
+              
+              {/* Error message display */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                  {error}
+                </div>
+              )}
             </div>
 
             {/* Forecast */}
@@ -185,7 +230,6 @@ export default function Home() {
           </section>
         </div>
         
-        {/* Footer */}
         <footer className="mt-8 text-center text-sm text-gray-500">
           <p>Weather data powered by OpenWeather API</p>
         </footer>
