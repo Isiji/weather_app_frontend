@@ -46,7 +46,7 @@ export default function Home() {
         }
       );
     }
-  }, []);
+  }, [isFahrenheit]);
 
   const handleSearch = async () => {
     if (!city) return;
@@ -57,8 +57,14 @@ export default function Home() {
         `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
       );
       const geoData = await geoRes.json();
+      
+      if (!geoData || geoData.length === 0) {
+        console.error("City not found");
+        setLoading(false);
+        return;
+      }
+      
       const { lat, lon } = geoData[0];
-
       const unit = isFahrenheit ? "imperial" : "metric";
 
       const res = await fetch(
@@ -73,91 +79,117 @@ export default function Home() {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-200 via-sky-100 to-blue-100 p-6 grid grid-cols-3 gap-4 font-sans transition-all">
-      {/* Left Column */}
-      <section className="col-span-1 flex flex-col justify-between bg-white p-4 rounded-2xl shadow-md hover:shadow-xl transition duration-300">
-        <div className="text-center animate-fade-in">
-          <h2 className="text-xl font-bold mb-4 tracking-wide text-blue-700">Today's Weather</h2>
-          <img
-            src={weatherData?.icon ? `https://openweathermap.org/img/wn/${weatherData.icon}@4x.png` : "/placeholder-icon.png"}
-            alt="Weather Icon"
-            className="mx-auto mb-2 w-24"
-          />
-          <h2 className="text-4xl font-extrabold text-gray-800">
-            {weatherData ? `${weatherData.temperature}°${isFahrenheit ? "F" : "C"}` : "--"}
-          </h2>
-          <p className="text-lg capitalize text-gray-600">{weatherData?.weather ?? "Description"}</p>
-        </div>
-        <div className="text-sm text-gray-600 text-center mt-6">
-          <p>{weatherData?.date ?? localDate}</p>
-          <p className="font-medium text-gray-700">{weatherData?.city ?? "City, Country"}</p>
-        </div>
-      </section>
+    <main className="min-h-screen bg-gradient-to-br from-sky-100 via-blue-50 to-blue-100 p-6 font-sans transition-all">
+      {/* Container with better max-width and centering */}
+      <div className="max-w-7xl mx-auto">
+        {/* App title */}
+        <h1 className="text-3xl font-bold text-blue-800 mb-6 text-center">Weather Dashboard</h1>
+        
+        {/* Main layout container with refined gap */}
+        <div className="flex flex-row gap-6 overflow-x-auto pb-2">
+          {/* Left Column - Today's Weather */}
+          <section className="w-1/3 min-w-72 bg-white/95 border border-blue-200 rounded-2xl shadow-md p-8 flex flex-col items-center text-center hover:shadow-lg transition duration-300">
+            <h2 className="text-2xl font-bold mb-6 tracking-wide text-blue-700">Today's Weather</h2>
+            <div className="mb-4">
+              <img
+                src={weatherData?.icon ? `https://openweathermap.org/img/wn/${weatherData.icon}@4x.png` : "/placeholder-icon.png"}
+                alt="Weather Icon"
+                className="w-32 mx-auto"
+              />
+            </div>
+            <h2 className="text-5xl font-extrabold text-gray-800 mb-2">
+              {weatherData ? `${weatherData.temperature}°${isFahrenheit ? "F" : "C"}` : "--"}
+            </h2>
+            <p className="text-xl capitalize text-gray-600 mb-6">{weatherData?.weather ?? "Description"}</p>
+            <div className="text-sm text-gray-600 mt-4 p-4 bg-blue-50 rounded-xl w-full">
+              <p className="mb-1">{weatherData?.date ?? localDate}</p>
+              <p className="font-medium text-gray-700 text-lg">{weatherData?.city ?? "City, Country"}</p>
+            </div>
+          </section>
 
-      {/* Center Column */}
-      <section className="col-span-1 flex flex-col gap-4 animate-fade-in">
-        <h1 className="text-2xl font-extrabold text-blue-800 text-center mb-2">Weather Forecaster</h1>
-
-        {/* Search Bar */}
-        <div className="flex gap-2 items-center">
-          <Input
-            placeholder="Enter city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="flex-1"
-          />
-          <Button onClick={handleSearch}>{loading ? "Searching..." : "Search"}</Button>
-        </div>
-
-        {/* Forecast */}
-        <div className="bg-white rounded-2xl shadow-md p-4 hover:shadow-xl transition">
-          <h3 className="text-xl font-semibold mb-2 text-blue-700">3-Day Forecast</h3>
-          <div className="grid grid-cols-3 gap-4">
-            {(weatherData?.forecast || Array(3).fill(null)).map((day: Forecast | null, index: number) => (
-              <div key={index} className="text-center hover:scale-105 transition-transform">
-                <p className="text-sm text-gray-500">{day?.day ?? "--"}</p>
-                <img
-                  src={day ? `https://openweathermap.org/img/wn/${day.icon}@2x.png` : "/forecast-icon.png"}
-                  alt="icon"
-                  className="mx-auto w-12"
+          {/* Right Column - Controls and Details */}
+          <section className="w-2/3 flex flex-col gap-6">
+            {/* Search + Toggle Row */}
+            <div className="flex flex-row justify-between items-center gap-6 bg-white/90 border border-blue-200 rounded-xl shadow p-5">
+              {/* Search */}
+              <div className="flex w-3/4 gap-3">
+                <Input
+                  placeholder="Enter city name..."
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  className="flex-1 text-base"
                 />
-                <p className="text-base font-medium">{day ? `${day.temp}°` : "--"}</p>
+                <Button 
+                  onClick={handleSearch}
+                  disabled={loading}
+                  className="px-6"
+                >
+                  {loading ? "Searching..." : "Search"}
+                </Button>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Details */}
-        <div className="bg-white rounded-2xl shadow-md p-4 hover:shadow-xl transition">
-          <h3 className="text-xl font-semibold mb-2 text-blue-700">Details</h3>
-          <div className="flex justify-around">
-            <div className="flex items-center gap-2 text-center">
-              <WiStrongWind size={28} className="text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">Wind</p>
-                <p className="font-medium text-gray-800">{weatherData?.windSpeed ?? "--"} m/s</p>
+              {/* Toggle */}
+              <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 py-2 px-4 rounded-xl shadow-sm hover:shadow transition">
+                <span className="text-sm font-semibold text-gray-700">°C</span>
+                <Switch checked={isFahrenheit} onCheckedChange={setIsFahrenheit} />
+                <span className="text-sm font-semibold text-gray-700">°F</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-center">
-              <WiHumidity size={28} className="text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">Humidity</p>
-                <p className="font-medium text-gray-800">{weatherData?.humidity ?? "--"}%</p>
+
+            {/* Forecast */}
+            <div className="bg-white/95 border border-blue-200 rounded-2xl shadow p-6 hover:shadow-lg transition">
+              <h3 className="text-2xl font-semibold mb-5 text-blue-700 border-b border-blue-100 pb-2">3-Day Forecast</h3>
+              <div className="grid grid-cols-3 gap-6 mt-4">
+                {(weatherData?.forecast || Array(3).fill(null)).map((day: Forecast | null, index: number) => (
+                  <div key={index} className="text-center p-4 bg-blue-50 rounded-xl hover:scale-105 transition-transform hover:bg-blue-100">
+                    <p className="text-base font-medium text-gray-700 mb-2">{day?.day ?? "--"}</p>
+                    <img
+                      src={day?.icon ? `https://openweathermap.org/img/wn/${day.icon}@2x.png` : "/forecast-icon.png"}
+                      alt="icon"
+                      className="mx-auto w-16 my-2"
+                    />
+                    <p className="text-lg font-medium">{day ? `${day.temp}°` : "--"}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Right Column - Toggle */}
-      <section className="col-span-1 flex justify-end items-start">
-        <div className="flex items-center gap-2 bg-white p-3 rounded-xl shadow-md hover:shadow-lg transition">
-          <span className="text-sm font-semibold text-gray-700">°C</span>
-          <Switch checked={isFahrenheit} onCheckedChange={setIsFahrenheit} />
-          <span className="text-sm font-semibold text-gray-700">°F</span>
+            {/* Wind and Humidity Details */}
+            <div className="bg-white/95 border border-blue-200 rounded-2xl shadow p-6 hover:shadow-lg transition">
+              <h3 className="text-2xl font-semibold mb-5 text-blue-700 border-b border-blue-100 pb-2">Weather Details</h3>
+              <div className="flex justify-around mt-4">
+                <div className="flex items-center gap-4 text-center p-4 bg-blue-50 rounded-xl w-2/5">
+                  <WiStrongWind size={42} className="text-blue-600" />
+                  <div>
+                    <p className="text-base text-gray-500 mb-1">Wind Speed</p>
+                    <p className="font-bold text-gray-800 text-xl">{weatherData?.windSpeed ?? "--"} m/s</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-center p-4 bg-blue-50 rounded-xl w-2/5">
+                  <WiHumidity size={42} className="text-blue-600" />
+                  <div>
+                    <p className="text-base text-gray-500 mb-1">Humidity</p>
+                    <p className="font-bold text-gray-800 text-xl">{weatherData?.humidity ?? "--"}%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-      </section>
+        
+        {/* Footer */}
+        <footer className="mt-8 text-center text-sm text-gray-500">
+          <p>Weather data powered by OpenWeather API</p>
+        </footer>
+      </div>
     </main>
   );
 }
