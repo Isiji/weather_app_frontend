@@ -11,6 +11,7 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({ windSpeed, humidity }) 
 
   return (
     <div className="flex gap-4 w-full">
+      <h2>Todays Weather Details</h2>
       {/* Wind Speed Box */}
       <div className="flex-1 bg-white border rounded-2xl shadow-md p-4 text-center">
         <div className="flex items-center justify-center gap-2 mb-2">

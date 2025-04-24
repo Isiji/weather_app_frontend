@@ -26,6 +26,7 @@ const WeatherToday: React.FC<WeatherTodayProps> = ({
 
   return (
     <section className="w-1/3 bg-white rounded-2xl shadow-md p-4 min-w-[260px] border">
+      <h2 className="text-xl font-semibold text-blue-700 mb-4">Today's Weather</h2>
       {weatherData ? (
         <div className="flex flex-col items-center">
           {icon && (

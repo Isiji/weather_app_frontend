@@ -15,6 +15,7 @@ const ForecastGrid: React.FC<ForecastGridProps> = ({ forecast }) => {
 
   return (
     <div className="flex flex-row justify-between gap-4 bg-white rounded-2xl shadow-md border p-4 mt-4 overflow-x-auto">
+      <p className="text-xl font-semibold text-blue-700 mb-4">3-Day Forecast</p>
       {forecast.map((day, index) => (
         <div
           key={index}
